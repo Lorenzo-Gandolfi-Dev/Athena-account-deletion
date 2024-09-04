@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Delete Firebase Account</title>
+    <!-- Include Firebase SDKs via CDN -->
     <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js"></script>
 </head>
@@ -24,19 +25,19 @@
     <p id="message"></p>
 
     <script>
-        // TODO: Replace with your Firebase project configuration
+        // Your Firebase configuration, copied from your Firebase Console
         const firebaseConfig = {
-  apiKey: "AIzaSyDwO1LjiEyVs0SpOIjRjdSDbWZP0XCN8YE",
-  authDomain: "athena-61f55.firebaseapp.com",
-  projectId: "athena-61f55",
-  storageBucket: "athena-61f55.appspot.com",
-  messagingSenderId: "573365943082",
-  appId: "1:573365943082:web:3ea9ed0bcff7f4d5f53c53",
-  measurementId: "G-GKMH6R9RHJ"
-};
+            apiKey: "AIzaSyDwO1LjiEyVs0SpOIjRjdSDbWZP0XCN8YE",
+            authDomain: "athena-61f55.firebaseapp.com",
+            projectId: "athena-61f55",
+            storageBucket: "athena-61f55.appspot.com",
+            messagingSenderId: "573365943082",
+            appId: "1:573365943082:web:3ea9ed0bcff7f4d5f53c53",
+            measurementId: "G-GKMH6R9RHJ"
+        };
 
         // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
+        firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
 
         // Handle form submission
@@ -52,9 +53,9 @@
 
             auth.signInWithEmailAndPassword(email, password)
                 .then((userCredential) => {
-                    // Re-authenticate the user
                     const user = userCredential.user;
 
+                    // Re-authenticate the user
                     user.reauthenticateWithCredential(credentials)
                         .then(() => {
                             // Once re-authenticated, delete the user account
