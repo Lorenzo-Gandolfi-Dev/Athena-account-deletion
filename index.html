@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elimina il tuo account di Athena Studenti</title>
+    <title>Delete Firebase Account</title>
     <!-- Load Firebase SDKs as modules -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js';
@@ -32,23 +32,25 @@
 
             // Recursively delete all subcollections
             async function deleteSubcollections(docRef) {
-                // Fetch all subcollections of the document
-                const subcollections = await docRef.listCollections();
-                for (const subcollection of subcollections) {
-                    const snapshot = await getDocs(query(subcollection, orderBy('__name__')));
-                    const batch = writeBatch(firestore);
+                // Fetch all collections under this document
+                const collections = await getDocs(collection(firestore, docPath));
+                const batch = writeBatch(firestore);
 
-                    snapshot.docs.forEach(doc => {
-                        batch.delete(doc.ref);
+                // Process each collection
+                collections.forEach(col => {
+                    const colRef = collection(firestore, docPath, col.id);
+                    getDocs(colRef).then(snapshot => {
+                        snapshot.docs.forEach(doc => {
+                            batch.delete(doc.ref);
+                        });
+                        return batch.commit();
                     });
 
-                    await batch.commit();
-
-                    // Recursively delete subcollections of subcollections
-                    for (const doc of snapshot.docs) {
-                        await deleteSubcollections(doc.ref);
-                    }
-                }
+                    // Recursively delete subcollections of each document
+                    snapshot.docs.forEach(doc => {
+                        deleteSubcollections(doc.ref.path);
+                    });
+                });
             }
 
             await deleteSubcollections(docRef);
@@ -92,15 +94,15 @@
     </script>
 </head>
 <body>
-    <h2>Elimina il tuo account di Athena Studenti</h2>
+    <h2>Delete Your Firebase Account</h2>
 
     <!-- Form for user credentials -->
     <form id="delete-account-form">
         <label for="email">Email:</label>
-        <input type="email" id="email" placeholder="Inserire email" required><br><br>
+        <input type="email" id="email" placeholder="Enter your email" required><br><br>
 
         <label for="password">Password:</label>
-        <input type="password" id="password" placeholder="Inserire password" required><br><br>
+        <input type="password" id="password" placeholder="Enter your password" required><br><br>
 
         <button type="submit">Delete Account</button>
     </form>
