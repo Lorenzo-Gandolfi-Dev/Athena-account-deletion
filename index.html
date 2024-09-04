@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elimina il tuo account di Athena</title>
+    <title>Delete Firebase Account</title>
     <!-- Load Firebase SDKs as modules -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js';
-        import { getFirestore, doc, deleteDoc, collection, getDocs, query, orderBy, writeBatch } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js';
+        import { getFirestore, doc, deleteDoc, collection, getDocs, writeBatch } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js';
 
         // Your Firebase configuration
         const firebaseConfig = {
@@ -26,38 +26,17 @@
         const auth = getAuth(app);
         const firestore = getFirestore(app);
 
-        // Recursive function to delete a document and its subcollections
-        async function deleteDocumentAndSubcollections(docPath) {
-            const docRef = doc(firestore, docPath);
-
-            // Create a batch operation
+        // Function to delete all documents in a specific subcollection
+        async function deleteSubcollection(docPath, subcollectionName) {
             const batch = writeBatch(firestore);
+            const subcollectionRef = collection(firestore, docPath, subcollectionName);
+            const snapshot = await getDocs(subcollectionRef);
 
-            // Fetch all documents in the collection
-            async function deleteSubcollections(docRef) {
-                const subcollections = await getDocs(collection(firestore, docRef.path));
-                const promises = [];
+            snapshot.forEach(doc => {
+                batch.delete(doc.ref);
+            });
 
-                // Process each document in the subcollection
-                subcollections.forEach(async (doc) => {
-                    const docRef = doc.ref;
-                    const subcollections = await getDocs(collection(firestore, docRef.path));
-
-                    // Recursively delete subcollections
-                    subcollections.forEach(subDoc => {
-                        promises.push(deleteSubcollections(subDoc.ref));
-                    });
-
-                    batch.delete(docRef); // Delete the document itself
-                });
-
-                await Promise.all(promises); // Wait for all subcollection deletions
-            }
-
-            await deleteSubcollections(docRef);
-
-            await batch.commit(); // Commit the batch operation
-            await deleteDoc(docRef); // Delete the document itself
+            await batch.commit();
         }
 
         // Handle form submission
@@ -78,12 +57,19 @@
                     const credentials = EmailAuthProvider.credential(email, password);
                     await reauthenticateWithCredential(user, credentials);
 
-                    // Delete Firestore data under /Users/{uid}
+                    // Define path to the user's document and the subcollection
                     const uid = user.uid;
-                    await deleteDocumentAndSubcollections(`Users/${uid}`);
+                    const userDocPath = `Users/${uid}`;
+                    const subcollectionName = 'SavedInfo';
+
+                    // Delete documents in the subcollection
+                    await deleteSubcollection(userDocPath, subcollectionName);
+
+                    // Optionally delete the user document itself
+                    await deleteDoc(doc(firestore, userDocPath));
 
                     // Delete user account
-                    await deleteDoc(doc(firestore, `Users/${uid}`));
+                    await user.delete(); // Make sure this method is available based on your auth SDK version
 
                     document.getElementById('message').innerText = "Your account and all associated data have been deleted.";
                 } catch (error) {
@@ -95,17 +81,17 @@
     </script>
 </head>
 <body>
-    <h2>Elimina il tuo account di Athena</h2>
+    <h2>Delete Your Firebase Account</h2>
 
     <!-- Form for user credentials -->
     <form id="delete-account-form">
         <label for="email">Email:</label>
-        <input type="email" id="email" placeholder="Inserire email" required><br><br>
+        <input type="email" id="email" placeholder="Enter your email" required><br><br>
 
         <label for="password">Password:</label>
-        <input type="password" id="password" placeholder="Inserire password" required><br><br>
+        <input type="password" id="password" placeholder="Enter your password" required><br><br>
 
-        <button type="submit">Elimina account e dati</button>
+        <button type="submit">Delete Account</button>
     </form>
 
     <p id="message"></p>
