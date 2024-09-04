@@ -1,7 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-<!DOCTYPE html>
-<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +8,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js';
-        import { getFirestore, doc, deleteDoc, collection, getDocs, query, orderBy, batch, listCollections } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js';
+        import { getFirestore, doc, deleteDoc, collection, getDocs, query, orderBy, writeBatch, listCollections } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js';
 
         // Your Firebase configuration
         const firebaseConfig = {
@@ -22,7 +20,6 @@
             appId: "1:573365943082:web:3ea9ed0bcff7f4d5f53c53",
             measurementId: "G-GKMH6R9RHJ"
         };
-
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
@@ -38,7 +35,7 @@
                 const subcollections = await listCollections(docRef);
                 for (const subcollection of subcollections) {
                     const snapshot = await getDocs(query(subcollection, orderBy('__name__')));
-                    const batch = writeBatch(firestore);
+                    const batch = writeBatch(firestore);  // Correct function name
 
                     snapshot.docs.forEach(doc => {
                         batch.delete(doc.ref);
@@ -82,7 +79,7 @@
                     await deleteDocumentAndSubcollections(`Users/${uid}`);
 
                     // Delete user account
-                    await deleteDoc(user);
+                    await deleteDoc(doc(firestore, `Users/${uid}`));
 
                     document.getElementById('message').innerText = "Your account and all associated data have been deleted.";
                 } catch (error) {
