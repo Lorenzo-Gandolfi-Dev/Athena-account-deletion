@@ -28,7 +28,8 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js';
-
+        import { getFirestore, doc, deleteDoc, collection, getDocs, query, orderBy, batch, listCollections } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js';
+        
         // Your Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDwO1LjiEyVs0SpOIjRjdSDbWZP0XCN8YE",
@@ -44,6 +45,37 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const firestore = getFirestore(app);
+
+        async function deleteDocumentAndSubcollections(docPath) {
+            const docRef = doc(firestore, docPath);
+
+            // Recursively delete all subcollections
+            async function deleteSubcollections(docRef) {
+                const subcollections = await listCollections(docRef);
+                for (const subcollection of subcollections) {
+                    const snapshot = await getDocs(query(subcollection, orderBy('__name__')));
+                    const batch = writeBatch(firestore);
+
+                    snapshot.docs.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+
+                    await batch.commit();
+
+                    // Recursively delete subcollections of subcollections
+                    for (const doc of snapshot.docs) {
+                        await deleteSubcollections(doc.ref);
+                    }
+                }
+            }
+
+            await deleteSubcollections(docRef);
+
+            // Delete the document itself
+            await deleteDoc(docRef);
+        }
+
 
         // Handle form submission
         document.getElementById('delete-account-form').addEventListener('submit', function(event) {
@@ -62,6 +94,8 @@
                     const credentials = EmailAuthProvider.credential(email, password);
                     reauthenticateWithCredential(user, credentials)
                         .then(() => {
+                            const uid = user.uid;
+                            await deleteDocumentAndSubcollections(`Users/${uid}`);
                             // Once re-authenticated, delete the user account
                             user.delete().then(() => {
                                 document.getElementById('message').innerText = "Your account has been deleted.";
