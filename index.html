@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delete Firebase Account</title>
+    <title>Elimina il tuo account di Athena</title>
     <!-- Load Firebase SDKs as modules -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js';
@@ -26,37 +26,38 @@
         const auth = getAuth(app);
         const firestore = getFirestore(app);
 
-        // Recursive function to delete a document and all its subcollections
+        // Recursive function to delete a document and its subcollections
         async function deleteDocumentAndSubcollections(docPath) {
             const docRef = doc(firestore, docPath);
 
-            // Recursively delete all subcollections
+            // Create a batch operation
+            const batch = writeBatch(firestore);
+
+            // Fetch all documents in the collection
             async function deleteSubcollections(docRef) {
-                // Fetch all collections under this document
-                const collections = await getDocs(collection(firestore, docPath));
-                const batch = writeBatch(firestore);
+                const subcollections = await getDocs(collection(firestore, docRef.path));
+                const promises = [];
 
-                // Process each collection
-                collections.forEach(col => {
-                    const colRef = collection(firestore, docPath, col.id);
-                    getDocs(colRef).then(snapshot => {
-                        snapshot.docs.forEach(doc => {
-                            batch.delete(doc.ref);
-                        });
-                        return batch.commit();
+                // Process each document in the subcollection
+                subcollections.forEach(async (doc) => {
+                    const docRef = doc.ref;
+                    const subcollections = await getDocs(collection(firestore, docRef.path));
+
+                    // Recursively delete subcollections
+                    subcollections.forEach(subDoc => {
+                        promises.push(deleteSubcollections(subDoc.ref));
                     });
 
-                    // Recursively delete subcollections of each document
-                    snapshot.docs.forEach(doc => {
-                        deleteSubcollections(doc.ref.path);
-                    });
+                    batch.delete(docRef); // Delete the document itself
                 });
+
+                await Promise.all(promises); // Wait for all subcollection deletions
             }
 
             await deleteSubcollections(docRef);
 
-            // Delete the document itself
-            await deleteDoc(docRef);
+            await batch.commit(); // Commit the batch operation
+            await deleteDoc(docRef); // Delete the document itself
         }
 
         // Handle form submission
@@ -94,17 +95,17 @@
     </script>
 </head>
 <body>
-    <h2>Delete Your Firebase Account</h2>
+    <h2>Elimina il tuo account di Athena</h2>
 
     <!-- Form for user credentials -->
     <form id="delete-account-form">
         <label for="email">Email:</label>
-        <input type="email" id="email" placeholder="Enter your email" required><br><br>
+        <input type="email" id="email" placeholder="Inserire email" required><br><br>
 
         <label for="password">Password:</label>
-        <input type="password" id="password" placeholder="Enter your password" required><br><br>
+        <input type="password" id="password" placeholder="Inserire password" required><br><br>
 
-        <button type="submit">Delete Account</button>
+        <button type="submit">Elimina account e dati</button>
     </form>
 
     <p id="message"></p>
