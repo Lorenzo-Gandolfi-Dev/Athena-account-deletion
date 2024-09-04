@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delete Firebase Account</title>
+    <title>Elimina il tuo account di Athena Studenti</title>
     <!-- Load Firebase SDKs via CDN -->
-    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js" type="module"></script>
 </head>
 <body>
-    <h2>Delete Your Firebase Account</h2>
+    <h2>Elimina il tuo account di Athena Studenti</h2>
 
     <!-- Form for user credentials -->
     <form id="delete-account-form">
@@ -26,8 +26,8 @@
 
     <!-- Use type="module" to enable import statements -->
     <script type="module">
-        import firebase from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js';
-        import 'https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js';
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js';
 
         // Your Firebase configuration
         const firebaseConfig = {
@@ -40,8 +40,8 @@
         };
 
         // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
 
         // Handle form submission
         document.getElementById('delete-account-form').addEventListener('submit', function(event) {
@@ -52,13 +52,13 @@
             const password = document.getElementById('password').value;
 
             // Sign in user with email and password
-            auth.signInWithEmailAndPassword(email, password)
+            signInWithEmailAndPassword(auth, email, password)
                 .then((userCredential) => {
                     const user = userCredential.user;
 
                     // Re-authenticate the user
-                    const credentials = firebase.auth.EmailAuthProvider.credential(email, password);
-                    user.reauthenticateWithCredential(credentials)
+                    const credentials = EmailAuthProvider.credential(email, password);
+                    reauthenticateWithCredential(user, credentials)
                         .then(() => {
                             // Once re-authenticated, delete the user account
                             user.delete().then(() => {
